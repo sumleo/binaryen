@@ -30,4 +30,14 @@ struct ImportNames {
 
 } // namespace wasm
 
+namespace std {
+
+template<> struct hash<ImportNames> {
+  size_t operator()(const ImportNames& importNames) {
+    return std::hash(std::pair(importNames.module, importNames.name));
+  }
+};
+
+} // namespace std
+
 #endif // wasm_ir_import_name_h

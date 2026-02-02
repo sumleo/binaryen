@@ -68,26 +68,6 @@ bool isNullableAndMutable(Expression* ref, Index fieldIndex) {
 // the output.
 #define RECOMMENDATION "\n       recommendation: "
 
-class EvallingImportResolver : public ImportResolver {
-public:
-  EvallingImportResolver() : stubLiteral({Literal(0)}) {};
-
-  // Return an unused stub value. We throw FailToEvalException on reading any
-  // imported globals. We ignore the type and return an i32 literal since some
-  // types can't be created anyway (e.g. ref none).
-  Literals* getGlobalOrNull(ImportNames name, Type type) const override {
-    return &stubLiteral;
-  }
-
-  RuntimeTable* getTableOrNull(ImportNames name,
-                               const Table& type) const override {
-    throw FailToEvalException{"Imported table access."};
-  }
-
-private:
-  mutable Literals stubLiteral;
-};
-
 class EvallingRuntimeTable : public RuntimeTable {
 public:
   // TODO: putting EvallingModuleRunner into its own header would allow us to
@@ -164,6 +144,29 @@ private:
   const bool& instanceInitialized;
   const Module& wasm;
   const std::function<Literal(Name, Type)> makeFuncData;
+};
+
+class EvallingImportResolver : public ImportResolver {
+public:
+  EvallingImportResolver() : stubLiteral({Literal(0)}) {};
+
+  // Return an unused stub value. We throw FailToEvalException on reading any
+  // imported globals. We ignore the type and return an i32 literal since some
+  // types can't be created anyway (e.g. ref none).
+  Literals* getGlobalOrNull(ImportNames name, Type type) const override {
+    return &stubLiteral;
+  }
+
+  RuntimeTable* getTableOrNull(ImportNames name,
+                               const Table& type) const override {
+
+    throw FailToEvalException{"Imported table access."};
+  }
+
+private:
+  mutable Literals stubLiteral;
+  mutable std::unordered_map<ImportNames, std::shared_ptr<EvallingRuntimeTable>>
+    tables;
 };
 
 class EvallingModuleRunner : public ModuleRunnerBase<EvallingModuleRunner> {
