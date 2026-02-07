@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef wasm_ir_import_name_h
-#define wasm_ir_import_name_h
+#ifndef wasm_ir_import_names_h
+#define wasm_ir_import_names_h
 
 #include <ostream>
 
@@ -26,12 +26,17 @@ namespace wasm {
 struct ImportNames {
   Name module;
   Name name;
+
+  bool operator==(const ImportNames& other) const {
+    return module == other.module && name == other.name;
+  }
 };
 
 } // namespace wasm
 
 namespace std {
 
+// TODO?
 template<> struct hash<wasm::ImportNames> {
   size_t operator()(const wasm::ImportNames& importNames) const {
     return std::hash<wasm::Name>{}(importNames.module) ^
@@ -41,4 +46,4 @@ template<> struct hash<wasm::ImportNames> {
 
 } // namespace std
 
-#endif // wasm_ir_import_name_h
+#endif // wasm_ir_import_names_h

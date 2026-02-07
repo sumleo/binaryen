@@ -148,7 +148,11 @@ private:
 
 class EvallingImportResolver : public ImportResolver {
 public:
-  EvallingImportResolver() : stubLiteral({Literal(0)}) {};
+  EvallingImportResolver(const bool& instanceInitialized,
+                         const Module& wasm,
+                         std::function<Literal(Name, Type)> makeFuncData)
+    : stubLiteral({Literal(0)}), instanceInitialized(instanceInitialized),
+      wasm(wasm), makeFuncData(makeFuncData) {};
 
   // Return an unused stub value. We throw FailToEvalException on reading any
   // imported globals. We ignore the type and return an i32 literal since some
@@ -159,14 +163,20 @@ public:
 
   RuntimeTable* getTableOrNull(ImportNames name,
                                const Table& type) const override {
-
-    throw FailToEvalException{"Imported table access."};
+    auto [it, inserted] =
+      tables.emplace(name,
+                     std::make_unique<EvallingRuntimeTable>(
+                       type, instanceInitialized, wasm, makeFuncData));
+    return it->second.get();
   }
 
 private:
   mutable Literals stubLiteral;
-  mutable std::unordered_map<ImportNames, std::shared_ptr<EvallingRuntimeTable>>
+  mutable std::unordered_map<ImportNames, std::unique_ptr<EvallingRuntimeTable>>
     tables;
+  const bool& instanceInitialized;
+  const Module& wasm;
+  const std::function<Literal(Name, Type)> makeFuncData;
 };
 
 class EvallingModuleRunner : public ModuleRunnerBase<EvallingModuleRunner> {
@@ -176,10 +186,14 @@ public:
     ExternalInterface* externalInterface,
     const bool& instanceInitialized,
     std::map<Name, std::shared_ptr<EvallingModuleRunner>> linkedInstances_ = {})
-    : ModuleRunnerBase(wasm,
-                       externalInterface,
-                       std::make_shared<EvallingImportResolver>(),
-                       linkedInstances_) {}
+    : ModuleRunnerBase(
+        wasm,
+        externalInterface,
+        std::make_shared<EvallingImportResolver>(
+          instanceInitialized,
+          wasm,
+          [this](Name name, Type type) { return makeFuncData(name, type); }),
+        linkedInstances_) {}
 
   Flow visitGlobalGet(GlobalGet* curr) {
     // Error on reads of imported globals.
