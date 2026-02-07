@@ -176,20 +176,10 @@ public:
     ExternalInterface* externalInterface,
     const bool& instanceInitialized,
     std::map<Name, std::shared_ptr<EvallingModuleRunner>> linkedInstances_ = {})
-    : ModuleRunnerBase(
-        wasm,
-        externalInterface,
-        std::make_shared<EvallingImportResolver>(),
-        linkedInstances_,
-        // TODO: Only use EvallingRuntimeTable for table imports. We can use
-        // RealRuntimeTable for non-imported tables.
-        [this, &instanceInitialized](Literal initial, Table table) {
-          return std::make_unique<EvallingRuntimeTable>(
-            table,
-            instanceInitialized,
-            this->wasm,
-            [this](Name name, Type type) { return makeFuncData(name, type); });
-        }) {}
+    : ModuleRunnerBase(wasm,
+                       externalInterface,
+                       std::make_shared<EvallingImportResolver>(),
+                       linkedInstances_) {}
 
   Flow visitGlobalGet(GlobalGet* curr) {
     // Error on reads of imported globals.

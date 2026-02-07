@@ -32,9 +32,10 @@ struct ImportNames {
 
 namespace std {
 
-template<> struct hash<ImportNames> {
-  size_t operator()(const ImportNames& importNames) {
-    return std::hash(std::pair(importNames.module, importNames.name));
+template<> struct hash<wasm::ImportNames> {
+  size_t operator()(const wasm::ImportNames& importNames) const {
+    return std::hash<wasm::Name>{}(importNames.module) ^
+           std::hash<wasm::Name>{}(importNames.name);
   }
 };
 
