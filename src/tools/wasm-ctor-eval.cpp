@@ -1163,6 +1163,10 @@ start_eval:
           std::cout << "  ...stopping due to non-constant func\n";
         }
         break;
+      } catch (TrapException& trap) {
+        if (!quiet) {
+          std::cout << "  ...stopping due to trap\n";
+        }
       }
 
       if (flow.breakTo == NONCONSTANT_FLOW) {
